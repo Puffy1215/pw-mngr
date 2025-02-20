@@ -1,33 +1,42 @@
 import socket
 import hashlib
 import pickle
+from getpass import getpass
 
 def login(sock: socket.socket, master_pass: str) -> bool:
-    master_pass_dict = pickle.dumps({"master_pw": master_pass})
+    salt = pickle.loads(sock.recv(1024))['salt']
+    hex = hashlib.pbkdf2_hmac('sha256', master_pass.encode(), salt, 862780).hex()
+    master_pass = 0
+    master_pass_dict = pickle.dumps({"master_pw": hex})
+
     sock.send(master_pass_dict)
 
     sock.settimeout(15)
-    success_or_fail, _ = sock.accept()
-    
-    return False
-
-
-def set_password(pw_dict: dict, master_pass: str):
-    sock = socket.socket()
-    sock.connect(("127.0.0.1", 1234))
-
-    if login(sock, master_pass):
-        data = pickle.dumps(pw_dict)    
+    success_or_fail = sock.recv(1024)
+    return bool.from_bytes(success_or_fail), hex, salt
         
-        sock.send(data)
-        sock.close()
+
+def set_password(sock: socket.socket, set_pass: str, master_pass_hex: str, salt):
+    new_hex = (hashlib.pbkdf2_hmac('sha256', set_pass.encode(), salt, 862780) + bytes.fromhex(master_pass_hex)).hex()
+    print(new_hex)
+    data = pickle.dumps({"pass1": new_hex})
+    print("sending password")
+    sock.send(data)
 
 def retrieve_password(pw_key: dict, master_pass: str):
     pass
 
 def main():
-    master_pass = input("Enter master password: ")
-    set_password({"test": "test1"}, master_pass)
+    sock = socket.socket()
+    sock.connect(("127.0.0.1", 1234))
+    master_pass = getpass("Enter master password: ")
+
+    is_login_valid, hex, salt = login(sock, master_pass)
+    master_pass = 0
+    if is_login_valid:
+        print("login complete")
+        set_pass = getpass("Enter a password to store: ")
+        set_password(sock, set_pass, hex, salt)
 
 if __name__ == '__main__':
     main()
