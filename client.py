@@ -16,10 +16,10 @@ def login(sock: socket.socket, master_pass: str) -> bool:
     return bool.from_bytes(success_or_fail), hex, salt
         
 
-def set_password(sock: socket.socket, set_pass: str, master_pass_hex: str, salt):
-    new_hex = (hashlib.pbkdf2_hmac('sha256', set_pass.encode(), salt, 862780) + bytes.fromhex(master_pass_hex)).hex()
+def set_password(sock: socket.socket, set_pass: str, master_pass_hex: str, username: str):
+    new_hex = (hashlib.pbkdf2_hmac('sha256', set_pass.encode(), username.encode(), 862780) + bytes.fromhex(master_pass_hex)).hex()
     print(new_hex)
-    data = pickle.dumps({"pass1": new_hex})
+    data = pickle.dumps({username: new_hex})
     print("sending password")
     sock.send(data)
 
@@ -35,8 +35,9 @@ def main():
     master_pass = 0
     if is_login_valid:
         print("login complete")
+        username = input("Enter a username for the password: ")
         set_pass = getpass("Enter a password to store: ")
-        set_password(sock, set_pass, hex, salt)
+        set_password(sock, set_pass, hex, username)
 
 if __name__ == '__main__':
     main()
