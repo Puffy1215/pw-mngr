@@ -24,15 +24,18 @@ def login(sock: socket.socket, master_pass: str) -> Tuple[bool, bytes]:
 
 def set_password(sock: socket.socket, set_pass: str, username: str, fern: Fernet):
     token = fern.encrypt(set_pass.encode())
-    print(token)
+    print(f"TOKEN: {token}")
 
     data = pickle.dumps({username: token})
     print("sending password")
     sock.send(data)
 
 
-def retrieve_password(username: str, master_pass_hex: str):
-    pass
+def retrieve_password(sock: socket.socket, username: str, fern: Fernet):
+    sock.send(username.encode())
+    token = sock.recv(1024)
+    print(f"RECIEVED TOKEN: {token}")
+    print(fern.decrypt(token).decode())
 
 
 def main():
@@ -48,6 +51,7 @@ def main():
         username = input("Enter a username for the password: ")
         set_pass = getpass("Enter a password to store: ")
         set_password(sock, set_pass, username, fern)
+        retrieve_password(sock, username, fern)
     else:
         print("login failed")
         sock.close()
