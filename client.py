@@ -1,10 +1,10 @@
+import secrets
 import socket
 import hashlib
 import pickle
-import base64
 from getpass import getpass
 from typing import Tuple
-from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 
 def login(sock: socket.socket, master_pass: str) -> Tuple[bool, bytes]:
@@ -22,20 +22,21 @@ def login(sock: socket.socket, master_pass: str) -> Tuple[bool, bytes]:
     return bool.from_bytes(success_or_fail), master_pass_bytes
 
 
-def set_password(sock: socket.socket, set_pass: str, username: str, fern: Fernet):
-    token = fern.encrypt(set_pass.encode())
+def set_password(sock: socket.socket, set_pass: str, username: str, crypt: AESGCM):
+    nonce = secrets.token_bytes(12)
+    token = crypt.encrypt(nonce, set_pass.encode(), None)
     print(f"TOKEN: {token}")
 
-    data = pickle.dumps({username: token})
+    data = pickle.dumps({username: token, "nonce": nonce})
     print("sending password")
     sock.send(data)
 
 
-def retrieve_password(sock: socket.socket, username: str, fern: Fernet):
+def retrieve_password(sock: socket.socket, username: str, crypt: AESGCM):
     sock.send(username.encode())
-    token = sock.recv(1024)
-    print(f"RECIEVED TOKEN: {token}")
-    print(fern.decrypt(token).decode())
+    obj = pickle.loads(sock.recv(1024))
+    print(f"RECIEVED TOKEN: {obj["token"]}")
+    print(crypt.decrypt(obj["nonce"], obj["token"], None).decode())
 
 
 def main():
@@ -47,11 +48,11 @@ def main():
     master_pass = 0
     if is_login_valid:
         print("login complete")
-        fern = Fernet(base64.urlsafe_b64encode(master_pass_bytes))
+        aes = AESGCM(master_pass_bytes)
         username = input("Enter a username for the password: ")
         set_pass = getpass("Enter a password to store: ")
-        set_password(sock, set_pass, username, fern)
-        retrieve_password(sock, username, fern)
+        set_password(sock, set_pass, username, aes)
+        retrieve_password(sock, username, aes)
     else:
         print("login failed")
         sock.close()

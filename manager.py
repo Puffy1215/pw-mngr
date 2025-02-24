@@ -3,8 +3,6 @@ import hashlib
 import secrets
 import sys
 import pickle
-from cryptography.fernet import Fernet
-from cryptography.hazmat.primitives.ciphers.aead import AESGCMSIV
 
 HOST = "localhost"
 PORT = 1234
@@ -36,7 +34,7 @@ def send_password(conn: socket.socket):
     username = conn.recv(1024).decode()
     token = passwords.get(username, "")
     print(token)
-    conn.send(token)
+    conn.send(pickle.dumps({"token": token, "nonce": passwords['nonce']}))
 
 
 def main():
