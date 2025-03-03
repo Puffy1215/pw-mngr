@@ -7,7 +7,22 @@ from typing import Tuple
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 
-def login(sock: socket.socket, master_pass: str) -> Tuple[bool, bytes]:
+def _generate_master_pass(sock: socket.socket, password: str):
+    salt = secrets.token_bytes(50)
+    master_pw = hashlib.pbkdf2_hmac("sha256", password.encode(), salt, 862780)
+    obj = pickle.dumps({"hex": master_pw.hex(), "salt": salt})
+    sock.send(obj)
+
+
+def login(sock: socket.socket) -> Tuple[bool, bytes]:
+    obj_bytes = sock.recv(1024)
+    if obj_bytes.decode() == "00":
+        print("Password is not set")
+        master_pass = getpass("Set master password: ")
+        _generate_master_pass(sock, master_pass)
+
+
+    master_pass = getpass("Enter master password to login: ")
     salt = pickle.loads(sock.recv(1024))["salt"]
     master_pass_bytes = hashlib.pbkdf2_hmac(
         "sha256", master_pass.encode(), salt, 862780
@@ -42,10 +57,8 @@ def retrieve_password(sock: socket.socket, username: str, crypt: AESGCM):
 def main():
     sock = socket.socket()
     sock.connect(("127.0.0.1", 1234))
-    master_pass = getpass("Enter master password: ")
 
-    is_login_valid, master_pass_bytes = login(sock, master_pass)
-    master_pass = 0
+    is_login_valid, master_pass_bytes = login(sock)
     if is_login_valid:
         print("login complete")
         aes = AESGCM(master_pass_bytes)
