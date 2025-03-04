@@ -8,6 +8,7 @@ HOST = "localhost"
 PORT = 1234
 
 passwords = {}
+salt = secrets.token_bytes(50)
 
 
 def validate_login(conn: socket.socket, salt: bytes, master_pass_hex: str) -> bool:
@@ -39,12 +40,14 @@ def main():
         conn, _ = sock.accept()
         if master_pw_hex is None:
             conn.send("00".encode())
+            conn.send(salt)
             print("Master pass not set")
-            conn.setblocking(True)
+            # conn.setblocking(True)
             obj = pickle.loads(conn.recv(1024))
             print(obj)
-            master_pw_hex, salt = obj['hex'], obj['salt']
+            master_pw_hex = obj['hex']
         else:
+            print("here")
             is_login_valid = validate_login(conn, salt, master_pw_hex)
             conn.send(is_login_valid.to_bytes())
             if is_login_valid:

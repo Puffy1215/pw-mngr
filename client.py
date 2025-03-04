@@ -7,19 +7,20 @@ from typing import Tuple
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 
-def _generate_master_pass(sock: socket.socket, password: str):
-    salt = secrets.token_bytes(50)
+def _generate_master_pass(sock: socket.socket, password: str, salt: bytes):
     master_pw = hashlib.pbkdf2_hmac("sha256", password.encode(), salt, 862780)
-    obj = pickle.dumps({"hex": master_pw.hex(), "salt": salt})
+    obj = pickle.dumps({"hex": master_pw.hex()})
     sock.send(obj)
 
 
 def login(sock: socket.socket) -> Tuple[bool, bytes]:
-    obj_bytes = sock.recv(1024)
+    obj_bytes = sock.recv(2)
+    salt = None
     if obj_bytes.decode() == "00":
+        salt = sock.recv(1024)
         print("Password is not set")
         master_pass = getpass("Set master password: ")
-        _generate_master_pass(sock, master_pass)
+        _generate_master_pass(sock, master_pass, salt)
 
 
     master_pass = getpass("Enter master password to login: ")
