@@ -12,7 +12,7 @@ salt = secrets.token_bytes(50)
 
 
 def validate_login(conn: socket.socket, salt: bytes, master_pass_hex: str) -> bool:
-    conn.send(pickle.dumps({"salt": salt}))
+    conn.send(salt)
     hex = pickle.loads(conn.recv(1024))["master_pw"]
     return hex == master_pass_hex
 
@@ -42,19 +42,22 @@ def main():
             conn.send("00".encode())
             conn.send(salt)
             print("Master pass not set")
-            # conn.setblocking(True)
             obj = pickle.loads(conn.recv(1024))
             print(obj)
-            master_pw_hex = obj['hex']
+            master_pw_hex = obj["hex"]
         else:
-            print("here")
-            is_login_valid = validate_login(conn, salt, master_pw_hex)
-            conn.send(is_login_valid.to_bytes())
-            if is_login_valid:
-                print("success")
-                set_password(conn)
+            conn.send("01".encode())
+
+        is_login_valid = validate_login(conn, salt, master_pw_hex)
+        conn.send(is_login_valid.to_bytes())
+        if is_login_valid:
+            print("success")
+            option = conn.recv(1024)
+            print(option)
+            if option == "1":
                 send_password(conn)
-        
+            elif option == "2":
+                set_password(conn)
 
 
 if __name__ == "__main__":
