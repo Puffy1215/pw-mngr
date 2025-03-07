@@ -26,6 +26,7 @@ def set_password(conn: socket.socket):
 
 
 def send_password(conn: socket.socket):
+    print("howdy")
     username = conn.recv(1024).decode()
     token = passwords.get(username, "")
     print(token)
@@ -52,7 +53,7 @@ def main():
         conn.send(is_login_valid.to_bytes())
         if is_login_valid:
             print("success")
-            option = conn.recv(1024)
+            option = conn.recv(1024).decode()
             print(option)
             if option == "1":
                 send_password(conn)
