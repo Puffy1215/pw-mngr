@@ -1,7 +1,5 @@
 import socket
-import hashlib
 import secrets
-import sys
 import pickle
 
 HOST = "localhost"
@@ -26,7 +24,6 @@ def set_password(conn: socket.socket):
 
 
 def send_password(conn: socket.socket):
-    print("howdy")
     username = conn.recv(1024).decode()
     token = passwords.get(username, "")
     print(token)
