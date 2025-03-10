@@ -30,32 +30,40 @@ def send_password(conn: socket.socket):
     conn.send(pickle.dumps({"token": token, "nonce": passwords["nonce"]}))
 
 
+def set_master_pass(conn: socket.socket, master_pw_hex: str):
+    if master_pw_hex is None:
+        conn.send("00".encode())
+        conn.send(salt)
+        print("Master pass not set")
+        obj = pickle.loads(conn.recv(1024))
+        print(obj)
+        master_pw_hex = obj["hex"]
+    else:
+        conn.send("01".encode())
+
+
+def handle_connections(conn: socket.socket, master_pw_hex: str):
+    is_login_valid = validate_login(conn, salt, master_pw_hex)
+    conn.send(is_login_valid.to_bytes())
+    if is_login_valid:
+        print("success")
+        option = conn.recv(1024).decode()
+        print(option)
+        if option == "1":
+            send_password(conn)
+        elif option == "2":
+            set_password(conn)
+
+
 def main():
     sock = socket.create_server((HOST, PORT))
     sock.listen()
     master_pw_hex = None
     while True:
         conn, _ = sock.accept()
-        if master_pw_hex is None:
-            conn.send("00".encode())
-            conn.send(salt)
-            print("Master pass not set")
-            obj = pickle.loads(conn.recv(1024))
-            print(obj)
-            master_pw_hex = obj["hex"]
-        else:
-            conn.send("01".encode())
 
-        is_login_valid = validate_login(conn, salt, master_pw_hex)
-        conn.send(is_login_valid.to_bytes())
-        if is_login_valid:
-            print("success")
-            option = conn.recv(1024).decode()
-            print(option)
-            if option == "1":
-                send_password(conn)
-            elif option == "2":
-                set_password(conn)
+        set_master_pass(conn, master_pw_hex)
+        handle_connections(conn, master_pw_hex)
 
 
 if __name__ == "__main__":
