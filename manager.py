@@ -1,6 +1,7 @@
 import socket
 import secrets
 import pickle
+from threading import Thread
 
 HOST = "localhost"
 PORT = 1234
@@ -40,7 +41,7 @@ def set_master_pass(conn: socket.socket, master_pw_hex: str):
         master_pw_hex = obj["hex"]
     else:
         conn.send("01".encode())
-    
+
     return master_pw_hex
 
 
@@ -63,9 +64,13 @@ def main():
     master_pw_hex = None
     while True:
         conn, _ = sock.accept()
-
         master_pw_hex = set_master_pass(conn, master_pw_hex)
-        handle_connections(conn, master_pw_hex)
+        connection_thread = Thread(
+            target=lambda a, b: handle_connections(a, b),
+            args=(conn, master_pw_hex),
+        )
+
+        connection_thread.start()
 
 
 if __name__ == "__main__":
