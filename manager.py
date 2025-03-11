@@ -1,7 +1,10 @@
+from enum import Enum
 import socket
 import secrets
 import pickle
 from threading import Thread
+
+from constants import Action, MasterPasswordStatus
 
 HOST = "localhost"
 PORT = 1234
@@ -33,14 +36,14 @@ def send_password(conn: socket.socket):
 
 def set_master_pass(conn: socket.socket, master_pw_hex: str):
     if master_pw_hex is None:
-        conn.send("00".encode())
+        conn.send(MasterPasswordStatus.EMPTY.value.encode())
         conn.send(salt)
         print("Master pass not set")
         obj = pickle.loads(conn.recv(1024))
         print(obj)
         master_pw_hex = obj["hex"]
     else:
-        conn.send("01".encode())
+        conn.send(MasterPasswordStatus.SET.value.encode())
 
     return master_pw_hex
 
@@ -52,9 +55,9 @@ def handle_connections(conn: socket.socket, master_pw_hex: str):
         print("success")
         option = conn.recv(1024).decode()
         print(option)
-        if option == "1":
+        if option == Action.RETRIEVE.value:
             send_password(conn)
-        elif option == "2":
+        elif option == Action.SET.value:
             set_password(conn)
 
 

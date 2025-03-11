@@ -2,6 +2,7 @@ import secrets
 import socket
 import hashlib
 import pickle
+from constants import Login, Action, MasterPasswordStatus
 from getpass import getpass
 from typing import Tuple
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
@@ -15,7 +16,7 @@ def _generate_master_pass(sock: socket.socket, password: str, salt: bytes):
 
 def login(sock: socket.socket) -> Tuple[bool, bytes]:
     obj_bytes = sock.recv(2)
-    if obj_bytes.decode() == "00":
+    if obj_bytes.decode() == MasterPasswordStatus.EMPTY.value:
         salt = sock.recv(1024)
         print("Password is not set")
         master_pass = getpass("Set master password: ")
@@ -38,7 +39,7 @@ def login(sock: socket.socket) -> Tuple[bool, bytes]:
 
 
 def set_password(sock: socket.socket, set_pass: str, username: str, crypt: AESGCM):
-    sock.send("2".encode())
+    sock.send(Action.SET.value.encode())
     nonce = secrets.token_bytes(12)
     token = crypt.encrypt(nonce, set_pass.encode(), None)
     print(f"TOKEN: {token}")
@@ -49,7 +50,7 @@ def set_password(sock: socket.socket, set_pass: str, username: str, crypt: AESGC
 
 
 def retrieve_password(sock: socket.socket, username: str, crypt: AESGCM):
-    sock.send("1".encode())
+    sock.send(Action.RETRIEVE.value.encode())
     sock.send(username.encode())
     obj = pickle.loads(sock.recv(1024))
     print(f"RECIEVED TOKEN: {obj["token"]}")
@@ -65,15 +66,18 @@ def main():
         print("login complete")
         aes = AESGCM(master_pass_bytes)
 
-        user_input = input("[1] Retrieve password [2] Set Password: ")
-        if user_input == "1":
-            print()
+        user_input = input("[1] Retrieve password [2] Set Password [3] Exit: ")
+
+        if user_input == Action.RETRIEVE.value:
             username = input("Enter a username for the password: ")
             retrieve_password(sock, username, aes)
-        elif user_input == "2":
+        elif user_input == Action.SET.value:
             username = input("Enter a username for the password: ")
             set_pass = getpass("Enter a password to store: ")
             set_password(sock, set_pass, username, aes)
+        else:
+            sock.close()
+            exit(0)
 
     else:
         print("login failed")
