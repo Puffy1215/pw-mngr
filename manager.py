@@ -40,6 +40,8 @@ def set_master_pass(conn: socket.socket, master_pw_hex: str):
         master_pw_hex = obj["hex"]
     else:
         conn.send("01".encode())
+    
+    return master_pw_hex
 
 
 def handle_connections(conn: socket.socket, master_pw_hex: str):
@@ -62,7 +64,7 @@ def main():
     while True:
         conn, _ = sock.accept()
 
-        set_master_pass(conn, master_pw_hex)
+        master_pw_hex = set_master_pass(conn, master_pw_hex)
         handle_connections(conn, master_pw_hex)
 
 
