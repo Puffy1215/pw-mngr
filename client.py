@@ -1,3 +1,4 @@
+import argparse
 import secrets
 import socket
 import hashlib
@@ -57,9 +58,19 @@ def retrieve_password(sock: socket.socket, username: str, crypt: AESGCM):
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--port",
+        "-p",
+        type=int,
+        help="Port number for client to run on. Defaults to 1234.",
+        default=1234,
+    )
+    args = parser.parse_args()
+
     sock = socket.socket()
     sock.settimeout(15)
-    sock.connect(("127.0.0.1", 1234))
+    sock.connect(("127.0.0.1", args.port))
 
     is_login_valid, master_pass_bytes = login(sock)
     if is_login_valid:

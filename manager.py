@@ -1,3 +1,4 @@
+import argparse
 import socket
 import secrets
 import pickle
@@ -61,7 +62,17 @@ def handle_connections(conn: socket.socket, master_pw_hex: str):
 
 
 def main():
-    sock = socket.create_server((HOST, PORT))
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--port",
+        "-p",
+        type=int,
+        help="Port number for manager to run on. Defaults to 1234.",
+        default=1234,
+    )
+    args = parser.parse_args()
+
+    sock = socket.create_server((HOST, args.port))
     sock.listen()
     master_pw_hex = None
     while True:
