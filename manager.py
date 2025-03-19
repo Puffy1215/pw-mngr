@@ -1,4 +1,3 @@
-from enum import Enum
 import socket
 import secrets
 import pickle

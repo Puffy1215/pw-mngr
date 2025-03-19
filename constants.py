@@ -1,13 +1,9 @@
 from enum import Enum
 
+
 class MasterPasswordStatus(Enum):
     EMPTY = "0"
     SET = "1"
-
-
-class Login(Enum):
-    SUCCESS = "0"
-    FAILURE = "1"
 
 
 class Action(Enum):

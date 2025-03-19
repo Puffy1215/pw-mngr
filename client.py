@@ -2,7 +2,7 @@ import secrets
 import socket
 import hashlib
 import pickle
-from constants import Login, Action, MasterPasswordStatus
+from constants import Action, MasterPasswordStatus
 from getpass import getpass
 from typing import Tuple
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
@@ -33,7 +33,6 @@ def login(sock: socket.socket) -> Tuple[bool, bytes]:
 
     sock.send(master_pass_dict)
 
-    sock.settimeout(15)
     success_or_fail = sock.recv(1024)
     return bool.from_bytes(success_or_fail), master_pass_bytes
 
@@ -59,6 +58,7 @@ def retrieve_password(sock: socket.socket, username: str, crypt: AESGCM):
 
 def main():
     sock = socket.socket()
+    sock.settimeout(15)
     sock.connect(("127.0.0.1", 1234))
 
     is_login_valid, master_pass_bytes = login(sock)
