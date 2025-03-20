@@ -7,7 +7,6 @@ from threading import Thread
 from constants import Action, MasterPasswordStatus
 
 HOST = "localhost"
-PORT = 1234
 
 passwords = {}
 salt = secrets.token_bytes(50)
